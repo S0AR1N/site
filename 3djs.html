@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+	<title>3d_objects_operations</title>
+    <style>
+
+    body {
+        margin: 0;
+    }
+    #c {
+        width: 100vw;
+        height: 100vh;
+        display: block;
+    }
+    </style>
+</head>
+<body>
+	<script type="text/javascript" language="JavaScript1.5" src="https://rawgit.com/Vasilui/habrahabr/master/WebGL_Three.js/libs/three.js"></script>
+   	<script type="text/javascript" language="JavaScript1.5" src="https://rawgit.com/Vasilui/habrahabr/master/WebGL_Three.js/libs/AsciiEffect.js"></script>
+   	<script type="text/javascript" language="JavaScript1.5" src="https://rawgit.com/Vasilui/habrahabr/master/WebGL_Three.js/libs/stats.js"></script>
+   	<script type="text/javascript" language="JavaScript1.5" src="https://rawgit.com/Vasilui/habrahabr/master/WebGL_Three.js/libs/dat.gui.js"></script>
+	<canvas id="c" width="805" height="907"></canvas>
+  
+<script type="module">
+import * as THREE from 'https://threejsfundamentals.org/threejs/resources/threejs/r115/build/three.module.js';
+
+function main() {
+  const canvas = document.querySelector('#c');
+  const renderer = new THREE.WebGLRenderer({canvas});
+
+  const fov = 40;
+  const aspect = 2;  // the canvas default
+  const near = 0.1;
+  const far = 1000;
+  const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+  camera.position.z = 120;
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xAAAAAA);
+
+  {
+    const color = 0xFFFFFF;
+    const intensity = 1;
+    const light = new THREE.DirectionalLight(color, intensity);
+    light.position.set(-1, 2, 4);
+    scene.add(light);
+  }
+  {
+    const color = 0xFFFFFF;
+    const intensity = 1;
+    const light = new THREE.DirectionalLight(color, intensity);
+    light.position.set(1, -2, -4);
+    scene.add(light);
+  }
+
+  const objects = [];
+  const spread = 15;
+
+  function addObject(x, y, obj) {
+    obj.position.x = x * spread;
+    obj.position.y = y * spread;
+
+    scene.add(obj);
+    objects.push(obj);
+  }
+
+  function createMaterial() {
+    const material = new THREE.MeshPhongMaterial({
+      side: THREE.DoubleSide,
+    });
+
+    const hue = Math.random();
+    const saturation = 1;
+    const luminance = .5;
+    material.color.setHSL(hue, saturation, luminance);
+
+    return material;
+  }
+
+  function addSolidGeometry(x, y, geometry) {
+    const mesh = new THREE.Mesh(geometry, createMaterial());
+    addObject(x, y, mesh);
+  }
+
+  function addLineGeometry(x, y, geometry) {
+    const material = new THREE.LineBasicMaterial({color: 0x000000});
+    const mesh = new THREE.LineSegments(geometry, material);
+    addObject(x, y, mesh);
+  }
+  {
+    const width = 8;
+    const height = 8;
+    const depth = 8;
+    addSolidGeometry(-4, 0, new THREE.BoxBufferGeometry(width, height, depth));
+  }
+  {
+    const width = 8;
+    const height = 8;
+    const depth = 8;
+    const thresholdAngle = 15;
+    addLineGeometry(-3, 0, new THREE.EdgesGeometry(
+        new THREE.BoxBufferGeometry(width, height, depth),
+        thresholdAngle));
+  }
+  {
+    const width = 8;
+    const height = 8;
+    const depth = 8;
+    addLineGeometry(-2, 0, new THREE.WireframeGeometry(new THREE.BoxBufferGeometry(width, height, depth)));
+  }
+  {
+    const radius = 7;
+    addSolidGeometry(-1, 0, new THREE.TetrahedronBufferGeometry(radius));
+  }
+  {
+    const radius = 7;
+    addSolidGeometry(0, 0, new THREE.OctahedronBufferGeometry(radius));
+  }
+  {
+    const radius = 7;
+    addSolidGeometry(1, 0, new THREE.DodecahedronBufferGeometry(radius));
+  }
+  {
+    const radius = 7;
+    addSolidGeometry(2, 0, new THREE.IcosahedronBufferGeometry(radius));
+  }
+  {
+    const radius = 7;
+    const widthSegments = 12;
+    const heightSegments = 8;
+    addSolidGeometry(3, 0, new THREE.SphereBufferGeometry(radius, widthSegments, heightSegments));
+  }
+
+  function resizeRendererToDisplaySize(renderer) {
+    const canvas = renderer.domElement;
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    const needResize = canvas.width !== width || canvas.height !== height;
+    if (needResize) {
+      renderer.setSize(width, height, false);
+    }
+    return needResize;
+  }
+
+  var controls = new function() {
+  	  this.positionX = -4;
+  	  this.positionY = 0;
+  	  this.positionZ = 0;
+      this.rotationSpeedX = 0.02;
+      this.rotationSpeedY = 0.02;
+      this.rotationSpeedZ = 0.02;
+      this.bouncingSpeedF = 0.04;
+      this.bouncingSpeedS = 0.02;
+      this.bouncingPositionYF = 0;
+      this.bouncingPositionYS = 0;
+      this.bouncingPositionZF = 0;
+      this.bouncingPositionZS = 0;
+  }
+
+  var guip = new dat.GUI();
+  guip.add(controls, 'positionX',-4,4);
+  guip.add(controls, 'positionY',-2,2);
+  guip.add(controls, 'positionZ',-1,1);
+
+  var guir = new dat.GUI();
+  guir.add(controls, 'rotationSpeedX',0,0.5);
+  guir.add(controls, 'rotationSpeedY',0,0.5);
+  guir.add(controls, 'rotationSpeedZ',0,0.5);
+
+  var guib = new dat.GUI();
+  guib.add(controls, 'bouncingSpeedF',0,0.5);
+  guib.add(controls, 'bouncingSpeedS',0,0.5);
+  guib.add(controls, 'bouncingPositionYF',-1,1);
+  guib.add(controls, 'bouncingPositionZF',-1,1);
+  guib.add(controls, 'bouncingPositionYS',-1,1);
+  guib.add(controls, 'bouncingPositionZS',-1,1);
+
+  render();
+
+  var step1 = 0;
+  var step2 = 0;
+  var bposZF = 0;
+  var bposYF = 0;
+  var bposZS = 0;
+  var bposYS = 0;
+
+  function render(time) {
+  	 time *= 0.001;
+
+    if (resizeRendererToDisplaySize(renderer)) {
+      const canvas = renderer.domElement;
+      camera.aspect = canvas.clientWidth / canvas.clientHeight;
+      camera.updateProjectionMatrix();
+    }
+
+    objects[0].position.x = controls.positionX * spread;
+    objects[1].position.y = controls.positionY * spread;
+    objects[2].position.z = controls.positionZ * spread;
+
+    objects[3].rotation.x += controls.rotationSpeedX;
+    objects[4].rotation.y += controls.rotationSpeedY;
+    objects[5].rotation.z += controls.rotationSpeedZ;
+
+    step1 += controls.bouncingSpeedF;
+    bposZF = controls.bouncingPositionZF;
+    bposYF = controls.bouncingPositionYF;
+    objects[6].position.z = bposZF*spread + (10*(Math.cos(step1)));
+    objects[6].position.y = bposYF*spread + (10*Math.abs(Math.sin(step1)));
+
+	step2 += controls.bouncingSpeedS;
+	bposZS = controls.bouncingPositionZS;
+	bposYS = controls.bouncingPositionYS;
+    objects[7].position.z = bposZS*spread + (10*(Math.cos(step2)));
+    objects[7].position.y = bposYS*spread + (10*Math.abs(Math.sin(step2)));
+
+    renderer.render(scene, camera);
+
+    requestAnimationFrame(render);
+  }
+
+  requestAnimationFrame(render);
+}
+
+main();
+</script>
+</body>
+</html>
